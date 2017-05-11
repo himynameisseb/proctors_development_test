@@ -82,6 +82,7 @@ $RECYCLE.BIN/
 ### Node ###
 npm-debug.log*
 node_modules
+sites/all/themes/store_bootstrap/node_modules
 
 # Optional npm cache directory
 .npm
