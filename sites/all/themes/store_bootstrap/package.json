@@ -1,0 +1,15 @@
+{
+  "name": "store_bootstrap",
+  "version": "1.0.0",
+  "author": "Seb Anthony",
+  "homepage": "",
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-contrib-compass": "v0.9.0",
+    "grunt-contrib-sass": "v0.7.3",
+    "grunt-contrib-watch": "v0.6.1"
+  }
+}
