@@ -2,3 +2,56 @@
  * Add your CSS Styles in here.
  * This CSS File is included on every page by default
  */
+
+.page-node.node-type-store header {
+	clear: both;
+	overflow: auto;
+}
+
+.page-node.node-type-store .h1-wrapper {
+	clear: both;
+}
+
+.page-node.node-type-store .title {
+	float: left;  
+}
+
+.page-node.node-type-store .field-name-field-store-type {
+	float: left;
+  line-height: 3.45;
+  margin-left: 10px;
+  font-size: 24px;
+}
+
+.page-node.node-type-store .field-name-field-store-type .field-item::before { 
+    content: "- ";
+}
+
+.open-times {
+	border: solid 1px #e7e7e7;
+	float: right;
+}
+
+.open-times .open-times-head {
+	font-weight:bold;
+	background: #e7e7e7;
+	padding: 12px;
+}
+
+.open-times .open-times-content {
+	text-align: center;
+	padding: 12px 24px;
+}
+
+@media (max-width: 768px) {
+   .open-times { float: none; }
+}
+
+.page-node.node-type-store .field-name-field-store-manager {
+	margin-bottom: 12px;
+}
+
+.page-node.node-type-store .field-name-field-address {
+	margin-bottom: 12px;
+}
+

@@ -58,8 +58,8 @@
 <article id="node-<?php print $node->nid; ?>" class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
 
   <header>
-      <h1 class="title"><?php print $title; ?></a></h2> 
-      - <?php print render($content['field_store_type']); ?>
+      <div class="h1-wrapper"><h1 class="title"><?php print $title; ?></a></h1></div> 
+      <?php print render($content['field_store_type']); ?>
   </header>
  
   <div class="open-times">
