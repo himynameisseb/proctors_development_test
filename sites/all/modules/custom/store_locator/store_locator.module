@@ -82,19 +82,180 @@ function store_locator_import($form, &$form_state)
  */
 function store_locator_import_submit($form, &$form_state)
 {
-    //the submitted form data will be in here
-    dpm($form_state);
-    //The CSV data will be in $form_state['values']['csv_data']
-    dpm($form_state['values']['csv_data']);
+
+    // Get store data array from posted csv string.
+    $store_array = _store_locator_get_store_array($form_state['input']['csv_data']);
     
-    //HINT: Use str-getcsv or fgetcsv to parse the string in to an array
-    //http://php.net/manual/en/function.str-getcsv.php http://php.net/manual/en/function.fgetcsv.php
-    
-    
-    
+    // If error with format, don't upload stores and notify the user.
+    if ($store_array === FALSE) 
+    {
+      form_set_error("csv_data", "The format of the CSV file was incorrect, the upload has not been processed.  Please check the CSV file contains the correct header and rows and is in the correct format.");
+    }
+    else
+    {
+      // Add stores as store nodes
+      _store_locator_add_store($store_array);
+    }
+
+}
+
+/**
+ * This function will take a csv string of store data and
+ * parse it into an associative array.
+ *
+ * @param string $csv_str
+ *
+ */
+function _store_locator_get_store_array($csv_str = "")
+{
+    // Check valadity of string format
+
+    // Convert csv string into associative array.
+    $rows = array_map('str_getcsv', explode("\n", $csv_str));
+    $header = array_shift($rows);
+
+    // Check validity of header
+    if (count($header) != 7) 
+    {
+        return false;
+    }
+
+    $csv = array();
+    foreach ($rows as $row) 
+    {
+
+      // check validity of rows
+      if (count($row) != 7) 
+      {
+        return false;
+      }
+
+      $csv[] = array_combine($header, $row);
+    }
+
+    return $csv;
 }
 
 
+/**
+ * This function will take an array of stores and
+ * import them into the store content type.
+ * Stores are processed/added via a batch process to protect against timeouts
+ *
+ * @param array $store_array
+ *
+ */
+function _store_locator_add_store($store_array = array())
+{
+
+  // Process the stores 1 at a time to protect against timeouts
+  $stores_count = count($store_array);
+  $operations = array();
+  for ($i = 0; $i < $stores_count; $i++) {
+    $operations[] = array('_store_locator_batch_create_stores',array($store_array[$i]));
+  }
+
+  // Upload stores via batch processing to ensure no timeout
+  $batch = array(
+    'title' => t('Adding stores'),
+    'operations' => $operations,
+    'progress_message' => t('Processed @current out of @total.'),
+    'error_message' => t('Store uploader has encountered an error.'),
+    'finished' => '_store_locator_batch_upload_stores_finished',
+  );
+  batch_set($batch);
+}
+
+/**
+ * This function checks for duplicate stores, checks for data issues
+ * and adds stores as store nodes to the Drupal website via a batch process.
+ * It will only run 100 imports at a time to protect against timeout errors.
+ */
+function _store_locator_batch_create_stores($store) 
+{
+  // Check a store with that name doesn't already exist
+  $query = new EntityFieldQuery();
+  $query
+    ->entityCondition('entity_type', 'node', '=')
+    ->propertyCondition('type', 'store', '=')
+    ->propertyCondition('title', $store['Store Name'], '=');
+  $result = $query->execute();
+
+  // If no stores with that name are found
+  if (count($result) == 0) 
+  {
+    // Add the store
+    _store_locator_save_store_node($store);
+
+    // Record the add in the log
+    watchdog('store_locator', 'Added store: %store', array('%store' => $store['Store Name']));
+  }
+  else
+  {
+    // Record that the store exists in the log
+    watchdog('store_locator', '%store exists... skipping', array('%store' => $store['Store Name']));
+  }
+
+}
+
+/**
+ * Drupal batch process finished function. This function
+ * runs when all of the store nodes have finished importing.
+ * Currently it just displays a done message.
+ */
+function _store_locator_batch_upload_stores_finished($success, $results, $operations) {
+  drupal_set_message('Stores added successfully.');
+}
+
+/**
+ * This function handles the actual node save when adding a store.
+ *
+ * @param array $store
+ */
+function _store_locator_save_store_node($store) {
+  // Globalise user to save the node as the current logged in user
+  global $user;
+
+  // Get the store long and lat from Google if not already present
+  if ($store['Latitude'] == "" && $store['Address'] != "") 
+  {
+    $point = geocoder('google', $store['Address']);
+    if (method_exists($point, 'out')) 
+    {
+      $geoJSON = $point->out('json');
+      $data = json_decode($geoJSON);
+      $store['Latitude'] = $data->coordinates[0];
+      $store['Longitude'] = $data->coordinates[1];
+    } else
+    {
+      // Record that we couldn't find the coordinates for an address
+      watchdog('store_locator', 'Couldn\'t find coordinates for %store', array('%store' => $store['Store Name']));
+    }
+  }
+
+  $values = array(
+    'type' => 'store',
+    'uid' => $user->uid,
+    'status' => 1,
+    'comment' => 1,
+    'promote' => 0,
+  );
+
+  $entity = entity_create('node', $values);
+
+  // Use the entity wrapper for convenience
+  $wrapper = entity_metadata_wrapper('node', $entity);
+  // Set values
+  $wrapper->title->set($store['Store Name']);
+  $wrapper->field_address->set($store['Address']);
+  $wrapper->field_phone_number->set($store['Phone Number']);
+  $wrapper->field_store_manager->set($store['Manager Name']);
+  $wrapper->field_store_type->set($store['Store Type']);
+  $wrapper->field_latitude->set($store['Latitude']);    
+  $wrapper->field_longitude->set($store['Longitude']);  
+  // Save the wrapper
+  $wrapper->save();
+}
 
 
 /**

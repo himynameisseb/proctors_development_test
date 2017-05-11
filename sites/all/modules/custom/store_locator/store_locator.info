@@ -4,4 +4,8 @@ core = 7.x
 version = 7.x-1.0
 package = Proctors Custom
 
+dependencies[] = delete_all
+dependencies[] = geocoder
+dependencies[] = entity
+
 stylesheets[all][] = store_locator.css
