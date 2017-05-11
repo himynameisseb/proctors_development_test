@@ -30,6 +30,7 @@
 .open-times {
 	border: solid 1px #e7e7e7;
 	float: right;
+	margin-bottom: 12px;
 }
 
 .open-times .open-times-head {
